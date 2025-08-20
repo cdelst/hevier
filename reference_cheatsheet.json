@@ -1,0 +1,557 @@
+{
+	"CHART": {
+		"CHEST": {
+			"sets_per_week": {
+				"min": 12,
+				"max": 20,
+				"unit": "sets/week"
+			},
+			"exercises": [
+				{
+					"name": "HORIZONTAL PRESS",
+					"example_exercises": [
+						"bench press",
+						"push up",
+						"dumbbell press"
+					],
+					"tag": "STRENGTH",
+					"rep_range": {
+						"min": 5,
+						"max": 15
+					}
+				},
+				{
+					"name": "INCLINE PRESS",
+					"example_exercises": [
+						"incline bench press",
+						"decline pushup",
+						"incline dumbbell press"
+					],
+					"tag": "STRENGTH",
+					"rep_range": {
+						"min": 5,
+						"max": 15
+					}
+				},
+				{
+					"name": "ISOLATION",
+					"example_exercises": [
+						"chest fly",
+						"pec deck",
+						"cable crossover"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				}
+			]
+		},
+		"BACK": {
+			"sets_per_week": {
+				"min": 12,
+				"max": 24,
+				"unit": "sets/week"
+			},
+			"exercises": [
+				{
+					"name": "HORIZONTAL PULL",
+					"example_exercises": [
+						"barbell row",
+						"seated cable row",
+						"dumbbell row"
+					],
+					"tag": "STRENGTH",
+					"rep_range": {
+						"min": 5,
+						"max": 15
+					}
+				},
+				{
+					"name": "VERTICAL PULL",
+					"example_exercises": [
+						"lat pulldown",
+						"pull up",
+						"chin up"
+					],
+					"tag": "STRENGTH",
+					"rep_range": {
+						"min": 5,
+						"max": 15
+					}
+				},
+				{
+					"name": "ISOLATION",
+					"example_exercises": [
+						"pullover",
+						"face pull",
+						"reverse fly"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				}
+			]
+		},
+		"SHOULDERS": {
+			"sets_per_week": {
+				"min": 15,
+				"max": 21,
+				"unit": "sets/week"
+			},
+			"exercises": [
+				{
+					"name": "OVERHEAD PRESS",
+					"example_exercises": [
+						"overhead press",
+						"military press",
+						"dumbbell shoulder press"
+					],
+					"tag": "STRENGTH",
+					"rep_range": {
+						"min": 5,
+						"max": 15
+					}
+				},
+				{
+					"name": "LATERAL HEAD ISOLATION",
+					"example_exercises": [
+						"dumbbell lateral raise",
+						"cable lateral raise",
+						"machine lateral raise"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				},
+				{
+					"name": "REAR HEAD ISOLATION",
+					"example_exercises": [
+						"rear delt fly",
+						"face pull",
+						"reverse pec deck"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				}
+			]
+		},
+		"BICEPS": {
+			"sets_per_week": {
+				"min": 12,
+				"max": 20,
+				"unit": "sets/week"
+			},
+			"exercises": [
+				{
+					"name": "MAIN BICEPS CURL",
+					"example_exercises": [
+						"barbell curl",
+						"dumbbell curl",
+						"ez-bar curl"
+					],
+					"tag": "STRENGTH",
+					"rep_range": {
+						"min": 5,
+						"max": 15
+					}
+				},
+				{
+					"name": "BRACHIALIS & BRACHIORADIALIS CURL",
+					"example_exercises": [
+						"hammer curl",
+						"reverse curl",
+						"neutral grip curl"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				},
+				{
+					"name": "PEAK FOCUSED CURL",
+					"example_exercises": [
+						"preacher curl",
+						"concentration curl",
+						"spider curl"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				}
+			]
+		},
+		"NECK": {
+			"sets_per_week": {
+				"min": 18,
+				"unit": "sets/week"
+			},
+			"exercises": [
+				{
+					"name": "FRONT SIDE",
+					"example_exercises": [
+						"neck curl",
+						"plate neck flexion"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				},
+				{
+					"name": "BACK SIDE",
+					"example_exercises": [
+						"neck extension",
+						"plate neck extension"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				},
+				{
+					"name": "SIDES",
+					"example_exercises": [
+						"neck rotation",
+						"lateral neck flexion"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				}
+			]
+		},
+		"TRICEPS": {
+			"sets_per_week": {
+				"min": 9,
+				"max": 15,
+				"unit": "sets/week"
+			},
+			"exercises": [
+				{
+					"name": "LATERAL HEAD ISOLATION",
+					"example_exercises": [
+						"cable pushdown",
+						"rope pushdown",
+						"tricep dips"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				},
+				{
+					"name": "LONG HEAD ISOLATION",
+					"example_exercises": [
+						"overhead extension",
+						"skull crushers",
+						"french press"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				}
+			]
+		},
+		"ABS": {
+			"sets_per_week": {
+				"min": 6,
+				"max": 12,
+				"unit": "sets/week",
+				"note": "weighted ab exercises"
+			},
+			"exercises": [
+				{
+					"name": "WEIGHTED AB EXERCISE",
+					"example_exercises": [
+						"cable crunch",
+						"machine crunch",
+						"weighted sit up"
+					],
+					"tag": "STRENGTH",
+					"rep_range": {
+						"min": 5,
+						"max": 15
+					}
+				},
+				{
+					"name": "BODYWEIGHT AB EXERCISE",
+					"example_exercises": [
+						"hanging leg raise",
+						"chair knee raise",
+						"plank variations"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				}
+			]
+		},
+		"FOREARMS": {
+			"sets_per_week": {
+				"min": 6,
+				"unit": "sets/week",
+				"note": "focus on wrist curls"
+			},
+			"exercises": [
+				{
+					"name": "WRIST CURL",
+					"example_exercises": [
+						"wrist curl",
+						"reverse wrist curl",
+						"farmer's walks"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				},
+				{
+					"name": "RICE BUCKET TRAINING",
+					"example_exercises": [
+						"rice bucket exercises",
+						"hand rotations in rice"
+					],
+					"tag": "OPTIONAL",
+					"rep_range": {
+						"optional": true
+					}
+				},
+				{
+					"name": "GRIPPERS",
+					"example_exercises": [
+						"grip strengthener",
+						"hand gripper exercises"
+					],
+					"tag": "OPTIONAL",
+					"rep_range": {
+						"optional": true
+					}
+				}
+			]
+		},
+		"QUADS": {
+			"sets_per_week": {
+				"min": 12,
+				"max": 18,
+				"unit": "sets/week"
+			},
+			"exercises": [
+				{
+					"name": "LOWER BODY COMPOUND",
+					"example_exercises": [
+						"squat",
+						"leg press",
+						"hack squat"
+					],
+					"tag": "STRENGTH",
+					"rep_range": {
+						"min": 5,
+						"max": 15
+					}
+				},
+				{
+					"name": "ISOLATION",
+					"example_exercises": [
+						"leg extensions",
+						"sissy squats"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				}
+			]
+		},
+		"HAMSTRINGS": {
+			"sets_per_week": {
+				"min": 12,
+				"max": 12,
+				"unit": "sets/week"
+			},
+			"exercises": [
+				{
+					"name": "HIP HINGE MOVEMENT",
+					"example_exercises": [
+						"Romanian deadlift",
+						"stiff leg deadlift",
+						"good mornings"
+					],
+					"tag": "STRENGTH",
+					"rep_range": {
+						"min": 5,
+						"max": 15
+					}
+				},
+				{
+					"name": "ISOLATION",
+					"example_exercises": [
+						"machine hamstring curl",
+						"nordic hamstring curl",
+						"lying leg curl"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				}
+			]
+		},
+		"GLUTES": {
+			"sets_per_week": {
+				"min": 6,
+				"max": 12,
+				"unit": "sets/week"
+			},
+			"exercises": [
+				{
+					"name": "GLUTE COMPOUND LIFT",
+					"example_exercises": [
+						"hip thrust",
+						"glute bridge",
+						"Bulgarian split squat"
+					],
+					"tag": "STRENGTH",
+					"rep_range": {
+						"min": 5,
+						"max": 15
+					}
+				},
+				{
+					"name": "ISOLATION",
+					"example_exercises": [
+						"glute kickbacks",
+						"lunges",
+						"clamshells"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				}
+			]
+		},
+		"CALVES": {
+			"sets_per_week": {
+				"min": 6,
+				"unit": "sets/week"
+			},
+			"exercises": [
+				{
+					"name": "ISOLATION",
+					"example_exercises": [
+						"standing calf raise",
+						"seated calf raise",
+						"donkey calf raise"
+					],
+					"tag": "HYPERTROPHY",
+					"rep_range": {
+						"min": 12,
+						"max": 30
+					}
+				}
+			]
+		},
+		"CARDIO": {
+			"sets_per_week": {
+				"min": 3,
+				"max": 5,
+				"unit": "sessions/week",
+				"note": "cardio sessions for cardiovascular health"
+			},
+			"exercises": [
+				{
+					"name": "RUNNING",
+					"example_exercises": [
+						"treadmill running",
+						"outdoor running",
+						"jogging"
+					],
+					"tag": "CARDIO",
+					"rep_range": {
+						"duration_minutes": 20,
+						"max_duration_minutes": 45
+					}
+				},
+				{
+					"name": "WARM_UP_CARDIO",
+					"example_exercises": [
+						"light treadmill walk",
+						"stationary bike",
+						"elliptical"
+					],
+					"tag": "WARMUP",
+					"rep_range": {
+						"duration_minutes": 5,
+						"max_duration_minutes": 10
+					}
+				}
+			]
+		}
+	},
+	"LEGEND": {
+		"STRENGTH": {
+			"description": "Strength and power focused training",
+			"rep_range": {
+				"min": 5,
+				"max": 15
+			},
+			"focus": "strength/power"
+		},
+		"HYPERTROPHY": {
+			"description": "Hypertrophy and endurance focused training",
+			"rep_range": {
+				"min": 12,
+				"max": 30
+			},
+			"focus": "hypertrophy/endurance"
+		},
+		"OPTIONAL": {
+			"description": "Optional supplementary exercises",
+			"rep_range": {
+				"optional": true
+			},
+			"focus": "supplementary/accessory"
+		},
+		"CARDIO": {
+			"description": "Cardiovascular training for heart health and endurance",
+			"rep_range": {
+				"duration_minutes": 20,
+				"max_duration_minutes": 45
+			},
+			"focus": "cardiovascular/endurance"
+		},
+		"WARMUP": {
+			"description": "Light cardio for workout preparation",
+			"rep_range": {
+				"duration_minutes": 5,
+				"max_duration_minutes": 10
+			},
+			"focus": "preparation/mobility"
+		}
+	}
+}
