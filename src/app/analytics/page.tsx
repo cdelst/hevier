@@ -15,11 +15,30 @@ export default function AnalyticsPage() {
 
 	const loadAnalyticsData = async () => {
 		try {
-			const response = await fetch('/api/webhook/hevy');
+			console.log('📊 Loading analytics from unified workout API...');
+			const response = await fetch('/api/workouts');
+
 			if (response.ok) {
 				const result = await response.json();
-				setData(result);
+
+				if (result.success) {
+					// Transform the unified API response to match expected format
+					const transformedData = {
+						currentAnalysis: result.data.analysis,
+						recentWorkouts: result.data.workouts.slice(0, 10), // Last 10 workouts
+						lastUpdated: result.data.metadata.fetchedAt,
+						metadata: result.data.metadata
+					};
+
+					setData(transformedData);
+					console.log(`✅ Analytics loaded: ${result.data.workouts.length} workouts, ${result.data.analysis.overallScore}% score`);
+				} else {
+					throw new Error(result.message || 'API returned error');
+				}
+			} else {
+				throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
 			}
+
 			setLoading(false);
 		} catch (error) {
 			console.error('Failed to load analytics:', error);

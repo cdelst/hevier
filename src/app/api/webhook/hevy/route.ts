@@ -11,10 +11,10 @@ interface HevyWebhookPayload {
 	};
 }
 
-// In-memory storage for demo - in production, use Firebase/database
-let recentWorkouts: any[] = [];
-let lastAnalysis: any = null;
-let lastSuggestion: any = null;
+// Cache for the latest analysis - in production, use Firebase/database
+let cachedAnalysis: any = null;
+let cachedWorkouts: any[] = [];
+let lastCacheUpdate: string | null = null;
 
 export async function POST(request: NextRequest) {
 	try {
@@ -37,80 +37,52 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		// Initialize services
-		const hevyAPI = new HevyAPIService(process.env.HEVY_API_TOKEN);
-		const analyzer = new WorkoutAnalyzerService();
-		const suggestionEngine = new WorkoutSuggestionService();
+		console.log(`🔄 New workout completed: ${webhookData.payload.workoutId}`);
+		console.log('📊 Triggering fresh analysis using unified API service...');
 
-		// Fetch the specific workout that was just completed
-		console.log(`🔄 Fetching workout details for: ${webhookData.payload.workoutId}`);
+		// Call our unified workout API service to get fresh analysis
+		const baseUrl = process.env.NODE_ENV === 'production'
+			? process.env.NEXT_PUBLIC_BASE_URL || 'https://your-app.com'
+			: 'http://localhost:3000';
 
-		// Note: This assumes Hevy API has an endpoint to get a specific workout
-		// We might need to adjust this based on actual Hevy API structure
-		const response = await fetch(
-			`https://api.hevyapp.com/v1/workouts/${webhookData.payload.workoutId}`,
-			{
-				headers: {
-					'api-key': process.env.HEVY_API_TOKEN || '',
-				},
+		const unifiedApiUrl = `${baseUrl}/api/workouts`;
+
+		try {
+			const analysisResponse = await fetch(unifiedApiUrl);
+
+			if (analysisResponse.ok) {
+				const result = await analysisResponse.json();
+
+				if (result.success) {
+					// Cache the fresh analysis
+					cachedAnalysis = result.data.analysis;
+					cachedWorkouts = result.data.workouts.slice(0, 10);
+					lastCacheUpdate = new Date().toISOString();
+
+					console.log(`✅ Fresh analysis complete:`);
+					console.log(`   • ${result.data.workouts.length} workouts analyzed`);
+					console.log(`   • Overall score: ${result.data.analysis.overallScore}%`);
+
+					// Log key insights
+					const deficits = result.data.analysis.muscleGroupVolumes
+						.filter((v: any) => v.deficit > 0)
+						.sort((a: any, b: any) => b.deficit - a.deficit)
+						.slice(0, 3);
+
+					if (deficits.length > 0) {
+						console.log('💪 Top volume deficits:',
+							deficits.map((d: any) => `${d.muscleGroup}: ${d.deficit} sets`).join(', ')
+						);
+					}
+				} else {
+					throw new Error(result.message || 'Unified API returned error');
+				}
+			} else {
+				throw new Error(`Unified API call failed: ${analysisResponse.status}`);
 			}
-		);
-
-		if (!response.ok) {
-			console.error('❌ Failed to fetch workout from Hevy API');
-			return NextResponse.json(
-				{ error: 'Failed to fetch workout' },
-				{ status: 500 }
-			);
-		}
-
-		const hevyWorkout = await response.json();
-		console.log(`✅ Fetched workout: ${hevyWorkout.title}`);
-
-		// Convert to internal format
-		const workoutSession = hevyAPI.convertHevyWorkout(hevyWorkout);
-
-		// Add to our workout history (in production, save to database)
-		recentWorkouts.unshift(workoutSession);
-
-		// Keep only last 30 workouts for analysis
-		if (recentWorkouts.length > 30) {
-			recentWorkouts = recentWorkouts.slice(0, 30);
-		}
-
-		console.log('🔄 Re-analyzing weekly volume with new workout...');
-
-		// Re-analyze weekly volume with the new workout
-		const weeklyAnalysis = analyzer.analyzeWeeklyVolume(recentWorkouts);
-		lastAnalysis = weeklyAnalysis;
-
-		console.log(`📊 New analysis: ${weeklyAnalysis.overallScore}/100 score`);
-
-		// Generate updated workout suggestions
-		const preferences = {
-			splitPreference: 'PPL' as const,
-			primaryGoal: 'HYPERTROPHY' as const,
-			workoutDaysPerWeek: 5,
-		};
-
-		const newSuggestion = suggestionEngine.generateTodaysSuggestion(
-			recentWorkouts,
-			preferences
-		);
-		lastSuggestion = newSuggestion;
-
-		console.log(`🎯 Updated suggestion: ${newSuggestion.workoutType} workout`);
-
-		// Log key insights
-		const deficits = weeklyAnalysis.muscleGroupVolumes
-			.filter(v => v.deficit > 0)
-			.sort((a, b) => b.deficit - a.deficit)
-			.slice(0, 3);
-
-		if (deficits.length > 0) {
-			console.log('💪 Top volume deficits:',
-				deficits.map(d => `${d.muscleGroup}: ${d.deficit} sets`).join(', ')
-			);
+		} catch (error) {
+			console.error('❌ Failed to get fresh analysis:', error);
+			// Continue with webhook response even if analysis fails
 		}
 
 		// In production, you might want to:
@@ -119,26 +91,26 @@ export async function POST(request: NextRequest) {
 		// 3. Update dashboard data in real-time
 		// 4. Trigger email summary if significant changes
 
+		// Build response data
 		const responseData = {
 			status: 'success',
 			message: 'Workout processed successfully',
 			data: {
 				workoutId: webhookData.payload.workoutId,
-				workoutType: workoutSession.type,
-				exerciseCount: workoutSession.exercises.length,
-				analysis: {
-					overallScore: weeklyAnalysis.overallScore,
-					totalWorkouts: weeklyAnalysis.totalWorkouts,
-					topDeficits: deficits.map(d => ({
-						muscleGroup: d.muscleGroup,
-						deficit: d.deficit,
-					})),
-				},
-				nextSuggestion: {
-					workoutType: newSuggestion.workoutType,
-					difficulty: newSuggestion.difficultyLevel,
-					duration: newSuggestion.estimatedDuration,
-				},
+				analysisUpdated: !!cachedAnalysis,
+				cacheUpdatedAt: lastCacheUpdate,
+				analysis: cachedAnalysis ? {
+					overallScore: cachedAnalysis.overallScore,
+					totalWorkouts: cachedAnalysis.totalWorkouts,
+					topDeficits: cachedAnalysis.muscleGroupVolumes
+						?.filter((v: any) => v.deficit > 0)
+						?.sort((a: any, b: any) => b.deficit - a.deficit)
+						?.slice(0, 3)
+						?.map((d: any) => ({
+							muscleGroup: d.muscleGroup,
+							deficit: d.deficit,
+						})) || [],
+				} : null,
 			},
 		};
 
@@ -160,17 +132,33 @@ export async function POST(request: NextRequest) {
 	}
 }
 
-// GET endpoint to retrieve current analysis and suggestions (for dashboard)
+// GET endpoint to retrieve cached analysis (legacy support - prefer /api/workouts)
 export async function GET() {
 	try {
-		const response = {
-			currentAnalysis: lastAnalysis,
-			currentSuggestion: lastSuggestion,
-			recentWorkouts: recentWorkouts.slice(0, 10), // Last 10 workouts
-			lastUpdated: new Date().toISOString(),
-		};
+		console.log('⚠️ DEPRECATED: Use /api/workouts instead of webhook GET endpoint');
 
-		return NextResponse.json(response);
+		// If we have cached data, return it
+		if (cachedAnalysis && cachedWorkouts.length > 0) {
+			const response = {
+				currentAnalysis: cachedAnalysis,
+				currentSuggestion: null, // TODO: Generate from unified service
+				recentWorkouts: cachedWorkouts,
+				lastUpdated: lastCacheUpdate || new Date().toISOString(),
+				note: 'DEPRECATED: Use /api/workouts for fresh data'
+			};
+
+			return NextResponse.json(response);
+		}
+
+		// If no cached data, redirect to unified API
+		return NextResponse.json(
+			{
+				error: 'No cached data available',
+				message: 'Use /api/workouts for fresh workout analysis',
+				redirect: '/api/workouts'
+			},
+			{ status: 404 }
+		);
 
 	} catch (error) {
 		console.error('❌ GET endpoint error:', error);

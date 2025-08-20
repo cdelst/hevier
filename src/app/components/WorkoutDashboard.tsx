@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Navigation from './Navigation';
 
@@ -16,41 +16,6 @@ export default function WorkoutDashboard() {
 	const [data, setData] = useState<DashboardData>({ loading: true });
 	const [error, setError] = useState<string | null>(null);
 
-	useEffect(() => {
-		loadDashboardData();
-
-		// Poll for updates every 30 seconds
-		const interval = setInterval(loadDashboardData, 30000);
-		return () => clearInterval(interval);
-	}, []);
-
-	const loadDashboardData = async () => {
-		try {
-			// Try to get data from webhook endpoint first (if available)
-			const response = await fetch('/api/webhook/hevy');
-
-			if (response.ok) {
-				const webhookData = await response.json();
-				setData({
-					analysis: webhookData.currentAnalysis,
-					suggestion: webhookData.currentSuggestion,
-					recentWorkouts: webhookData.recentWorkouts,
-					loading: false,
-					lastUpdated: webhookData.lastUpdated,
-				});
-			} else {
-				// Fallback to direct API calls if webhook data not available
-				await loadFallbackData();
-			}
-
-			setError(null);
-		} catch (err) {
-			console.error('Failed to load dashboard data:', err);
-			setError('Failed to load workout data');
-			await loadFallbackData();
-		}
-	};
-
 	const loadFallbackData = async () => {
 		try {
 			// This would normally use your services directly
@@ -65,6 +30,52 @@ export default function WorkoutDashboard() {
 			setData({ loading: false });
 		}
 	};
+
+	const loadDashboardData = useCallback(async () => {
+		try {
+			console.log('📊 Loading dashboard from unified workout API...');
+			// Use the unified workout API service
+			const response = await fetch('/api/workouts');
+
+			if (response.ok) {
+				const result = await response.json();
+
+				if (result.success) {
+					// Transform unified API response to dashboard format
+					const dashboardData = {
+						analysis: result.data.analysis,
+						suggestion: null, // TODO: Generate suggestions from unified service
+						recentWorkouts: result.data.workouts.slice(0, 10),
+						loading: false,
+						lastUpdated: result.data.metadata.fetchedAt,
+					};
+
+					setData(dashboardData);
+					console.log(`✅ Dashboard loaded: ${result.data.workouts.length} workouts, ${result.data.analysis.overallScore}% score`);
+				} else {
+					throw new Error(result.message || 'Unified API returned error');
+				}
+			} else {
+				// Fallback to mock data if API not available
+				console.warn('⚠️ Unified API not available, falling back to mock data');
+				await loadFallbackData();
+			}
+
+			setError(null);
+		} catch (err) {
+			console.error('Failed to load dashboard data:', err);
+			setError('Failed to load workout data');
+			await loadFallbackData();
+		}
+	}, []);
+
+	useEffect(() => {
+		loadDashboardData();
+
+		// Poll for updates every 30 seconds
+		const interval = setInterval(loadDashboardData, 30000);
+		return () => clearInterval(interval);
+	}, [loadDashboardData]);
 
 	if (data.loading) {
 		return <LoadingDashboard />;
@@ -231,7 +242,7 @@ function TodaysSuggestionCard({ suggestion }: { suggestion?: any }) {
 	if (!suggestion) {
 		return (
 			<div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6">
-				<h2 className="text-xl font-semibold text-white mb-4">🎯 Today's Workout</h2>
+				<h2 className="text-xl font-semibold text-white mb-4">🎯 Today&apos;s Workout</h2>
 				<div className="text-slate-400 text-center py-8">
 					<div className="text-4xl mb-2">💤</div>
 					<p>No workout suggestions available</p>
@@ -248,7 +259,7 @@ function TodaysSuggestionCard({ suggestion }: { suggestion?: any }) {
 
 	return (
 		<div className="bg-gradient-to-br from-purple-900/50 to-blue-900/50 backdrop-blur-sm border border-purple-500/30 rounded-lg p-6">
-			<h2 className="text-xl font-semibold text-white mb-4">🎯 Today's Workout</h2>
+			<h2 className="text-xl font-semibold text-white mb-4">🎯 Today&apos;s Workout</h2>
 
 			{/* Workout Type */}
 			<div className="text-center mb-6">

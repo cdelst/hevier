@@ -837,7 +837,7 @@ export const HEVY_EXERCISE_MAP: Record<string, string> = {
 	'light legs activation': '9694DA61', // Bodyweight squat
 	'glute kickbacks': 'CBA02382', // Glute Kickback (Machine)
 	'glute kickback': 'CBA02382', // Glute Kickback (Machine)
-	
+
 	// Additional push exercises
 	'tricep extension': '2F8D3067', // Triceps Extension (Barbell)
 	'triceps extension': '2F8D3067', // Triceps Extension (Barbell)
@@ -848,7 +848,7 @@ export const HEVY_EXERCISE_MAP: Record<string, string> = {
 	'close-grip bench press': '35B51B87', // Bench Press - Close Grip (Barbell)
 	'incline bench press': '50DFDFAB', // Incline Bench Press (Barbell)
 	'incline press': '50DFDFAB', // Incline Bench Press (Barbell)
-	
+
 	// Reference cheatsheet specific exercises
 	'dumbbell press': '3601968B', // Dumbbell Bench Press
 	'incline dumbbell press': '07B38369', // Incline Dumbbell Bench Press

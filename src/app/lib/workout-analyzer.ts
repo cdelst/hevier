@@ -1,4 +1,4 @@
-// Workout analysis service - analyzes last 7 days against reference requirements
+// Workout analysis service - analyzes last 14 days against reference requirements
 import {
 	WorkoutSession,
 	WeeklyAnalysis,
@@ -16,17 +16,17 @@ class WorkoutAnalyzerService {
 	}
 
 	/**
-	 * Analyze workouts from the last 7 days and calculate volume per muscle group
+	 * Analyze workouts from the last 14 days and calculate volume per muscle group
 	 */
 	analyzeWeeklyVolume(workouts: WorkoutSession[]): WeeklyAnalysis {
 		const weekStart = new Date();
-		weekStart.setDate(weekStart.getDate() - 7);
+		weekStart.setDate(weekStart.getDate() - 14);
 		weekStart.setHours(0, 0, 0, 0);
 
 		const weekEnd = new Date();
 		weekEnd.setHours(23, 59, 59, 999);
 
-		// Filter workouts to last 7 days
+		// Filter workouts to last 14 days
 		const weeklyWorkouts = workouts.filter(workout =>
 			workout.date >= weekStart && workout.date <= weekEnd
 		);
@@ -235,7 +235,7 @@ class WorkoutAnalyzerService {
 		}>;
 	} {
 		const weekStart = new Date();
-		weekStart.setDate(weekStart.getDate() - 7);
+		weekStart.setDate(weekStart.getDate() - 14);
 
 		const relevantWorkouts = workouts.filter(workout =>
 			workout.date >= weekStart

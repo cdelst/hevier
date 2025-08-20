@@ -101,48 +101,54 @@ class HevierRoutineCreator {
 	}
 
 	/**
-	 * Get user's recent workout data for analysis
+	 * Get user's recent workout data for analysis using the unified API service
 	 */
 	async getUserWorkoutData() {
 		try {
-			console.log('📊 Fetching recent workout data...');
+			console.log('📊 Fetching recent workout data from unified API service...');
 
-			// Get workouts from the last 14 days
-			const startDate = new Date();
-			startDate.setDate(startDate.getDate() - 14);
+			// Call our unified workout API service
+			const apiUrl = 'http://localhost:3000/api/workouts';
+			console.log(`🔗 Calling unified API: ${apiUrl}`);
 
-			class HevyWorkoutsRequest {
-				constructor(pageSize = 10, startDate = null) {
-					this.pageSize = pageSize;
-					this.startDate = startDate;
-				}
+			const response = await fetch(apiUrl, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
 
-				async fetch(makeHevyRequest) {
-					const data = await makeHevyRequest(`/workouts?pageSize=${this.pageSize}`);
-					if (this.startDate) {
-						data.workouts = data.workouts.filter(w => {
-							const workoutDate = new Date(w.start_time.split('T')[0]);
-							return workoutDate >= this.startDate;
-						});
-					}
-					return data;
-				}
+			if (!response.ok) {
+				const errorText = await response.text();
+				throw new Error(`API call failed: ${response.status} ${response.statusText} - ${errorText}`);
 			}
 
-			const hevyRequest = new HevyWorkoutsRequest(10, startDate);
-			const data = await hevyRequest.fetch(this.makeHevyRequest.bind(this));
+			const result = await response.json();
 
-			console.log(`📈 Found ${data.workouts.length} workouts in the last 14 days`);
+			if (!result.success) {
+				throw new Error(`API returned error: ${result.message || result.error}`);
+			}
 
-			// Convert Hevy workouts to our format
-			const convertedWorkouts = this.convertHevyWorkouts(data.workouts);
+			const { workouts, analysis, metadata } = result.data;
 
-			console.log(`🔄 Converted ${convertedWorkouts.length} workouts`);
-			console.log('Sample workout:', JSON.stringify(convertedWorkouts[0], null, 2));
+			console.log(`📈 Unified API results:`);
+			console.log(`   • ${workouts.length} workouts from ${metadata.dateRange.start} to ${metadata.dateRange.end}`);
+			console.log(`   • ${metadata.pagesProcessed} pages processed`);
+			console.log(`   • Overall score: ${analysis.overallScore}%`);
+
+			// Convert date strings to Date objects for script compatibility
+			const convertedWorkouts = workouts.map(workout => ({
+				...workout,
+				date: new Date(workout.date)
+			}));
+
+			if (convertedWorkouts.length > 0) {
+				console.log('📋 Sample workout:', JSON.stringify(convertedWorkouts[0], null, 2));
+			}
 
 			return convertedWorkouts;
 		} catch (error) {
-			console.error('❌ Error fetching workout data:', error.message);
+			console.error('❌ Error fetching workout data from unified API:', error.message);
 			throw error;
 		}
 	}
