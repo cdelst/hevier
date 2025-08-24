@@ -352,7 +352,7 @@ class WorkoutAnalyzerService {
 			});
 
 			const daysSinceLastWorked = lastWorkedDate
-				? (now.getTime() - lastWorkedDate.getTime()) / (1000 * 60 * 60 * 24)
+				? (now.getTime() - (lastWorkedDate as Date).getTime()) / (1000 * 60 * 60 * 24)
 				: 999;
 
 			// Determine recovery status based on days since last worked and recent volume

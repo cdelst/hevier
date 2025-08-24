@@ -202,5 +202,3 @@ export class WebhookService {
 		};
 	}
 }
-
-export { WebhookService };

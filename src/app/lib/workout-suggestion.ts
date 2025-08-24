@@ -513,12 +513,11 @@ class WorkoutSuggestionService {
 		if (cardioDeficit > 0) {
 			// Add light cardio warmup at the beginning
 			const cardioExercise: ExerciseSuggestion = {
-				id: crypto.randomUUID(),
 				exerciseName: 'light treadmill walk',
+				referenceCategory: 'CARDIO',
 				muscleGroups: ['CARDIO'],
 				suggestedSets: 1,
 				suggestedReps: { min: 5, max: 10 }, // 5-10 minutes
-				estimatedRestTime: 0,
 				reason: `Cardio deficit: Need ${Math.round(cardioDeficit)} more sessions this week`,
 				priority: 'LOW',
 				alternatives: ['stationary bike', 'elliptical', 'light walk']
@@ -538,14 +537,13 @@ class WorkoutSuggestionService {
 			const selectedAbs = absExercises[Math.floor(Math.random() * absExercises.length)];
 
 			const absExercise: ExerciseSuggestion = {
-				id: crypto.randomUUID(),
 				exerciseName: selectedAbs.example_exercises[0],
+				referenceCategory: 'ABS',
 				muscleGroups: ['ABS'],
 				suggestedSets: Math.min(3, Math.ceil(absDeficit / 2)),
 				suggestedReps: selectedAbs.rep_range.min ?
 					{ min: selectedAbs.rep_range.min, max: selectedAbs.rep_range.max || 15 } :
 					{ min: 12, max: 20 },
-				estimatedRestTime: 60,
 				reason: `Ab deficit: Need ${Math.round(absDeficit)} more sets this week`,
 				priority: 'LOW',
 				alternatives: selectedAbs.example_exercises.slice(1)
@@ -564,14 +562,13 @@ class WorkoutSuggestionService {
 			const selectedForearm = forearmExercises.find(ex => ex.tag === 'HYPERTROPHY') || forearmExercises[0];
 
 			const forearmExercise: ExerciseSuggestion = {
-				id: crypto.randomUUID(),
 				exerciseName: selectedForearm.example_exercises[0],
+				referenceCategory: 'FOREARMS',
 				muscleGroups: ['FOREARMS'],
 				suggestedSets: Math.min(3, Math.ceil(forearmsDeficit / 2)),
 				suggestedReps: selectedForearm.rep_range.min ?
 					{ min: selectedForearm.rep_range.min, max: selectedForearm.rep_range.max || 20 } :
 					{ min: 15, max: 25 },
-				estimatedRestTime: 45,
 				reason: `Forearm deficit: Need ${Math.round(forearmsDeficit)} more sets this week`,
 				priority: 'LOW',
 				alternatives: selectedForearm.example_exercises.slice(1)
@@ -590,14 +587,13 @@ class WorkoutSuggestionService {
 			const selectedNeck = neckExercises[Math.floor(Math.random() * neckExercises.length)];
 
 			const neckExercise: ExerciseSuggestion = {
-				id: crypto.randomUUID(),
 				exerciseName: selectedNeck.example_exercises[0],
+				referenceCategory: 'NECK',
 				muscleGroups: ['NECK'],
 				suggestedSets: Math.min(3, Math.ceil(neckDeficit / 6)), // Neck needs more sets per week
 				suggestedReps: selectedNeck.rep_range.min ?
 					{ min: selectedNeck.rep_range.min, max: selectedNeck.rep_range.max || 20 } :
 					{ min: 12, max: 20 },
-				estimatedRestTime: 45,
 				reason: `Neck deficit: Need ${Math.round(neckDeficit)} more sets this week`,
 				priority: 'LOW',
 				alternatives: selectedNeck.example_exercises.slice(1)

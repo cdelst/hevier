@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function SettingsPage() {
@@ -13,6 +13,13 @@ export default function SettingsPage() {
 	});
 	const [webhookUrl, setWebhookUrl] = useState('');
 	const [saving, setSaving] = useState(false);
+
+	// Set webhook URL on client side only
+	useEffect(() => {
+		if (typeof window !== 'undefined') {
+			setWebhookUrl(`${window.location.origin}/api/webhook/hevy`);
+		}
+	}, []);
 
 	const handleSave = async () => {
 		setSaving(true);
@@ -71,14 +78,15 @@ export default function SettingsPage() {
 								<div className="flex">
 									<input
 										type="text"
-										value={webhookUrl || `${window.location.origin}/api/webhook/hevy`}
+										value={webhookUrl}
 										onChange={(e) => setWebhookUrl(e.target.value)}
 										className="flex-1 bg-slate-800 border border-slate-600 rounded-l-lg px-4 py-3 text-white focus:border-purple-500 focus:outline-none"
 										readOnly
 									/>
 									<button
-										onClick={() => navigator.clipboard.writeText(`${window.location.origin}/api/webhook/hevy`)}
+										onClick={() => navigator.clipboard.writeText(webhookUrl)}
 										className="bg-purple-600 hover:bg-purple-700 border border-purple-600 rounded-r-lg px-4 py-3 text-white text-sm transition-colors"
+										disabled={!webhookUrl}
 									>
 										Copy
 									</button>

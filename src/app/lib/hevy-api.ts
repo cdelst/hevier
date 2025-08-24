@@ -1,7 +1,6 @@
 // Hevy API integration service
 import {
 	HevyWorkout,
-	HevyAuthResponse,
 	HevyUserProfile,
 	WorkoutSession,
 	Exercise,
