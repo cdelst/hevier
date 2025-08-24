@@ -147,7 +147,7 @@ export function WorkoutSuggestion({ suggestion }: WorkoutSuggestionProps) {
 								<Target className="h-5 w-5 text-slate-500" />
 								<div>
 									<p className="text-sm text-slate-600 dark:text-slate-400">Exercises</p>
-									<p className="font-semibold">{suggestion.exercises.length} exercises</p>
+									<p className="font-semibold">{suggestion.exercises?.length || 0} exercises</p>
 								</div>
 							</div>
 
@@ -155,7 +155,7 @@ export function WorkoutSuggestion({ suggestion }: WorkoutSuggestionProps) {
 								<Dumbbell className="h-5 w-5 text-slate-500" />
 								<div>
 									<p className="text-sm text-slate-600 dark:text-slate-400">Focus</p>
-									<p className="font-semibold">{suggestion.focus.join(', ')}</p>
+									<p className="font-semibold">{suggestion.focus?.join(', ') || suggestion.focusAreas?.join(', ') || 'Mixed'}</p>
 								</div>
 							</div>
 						</div>
@@ -166,10 +166,10 @@ export function WorkoutSuggestion({ suggestion }: WorkoutSuggestionProps) {
 								Exercise Breakdown
 							</h4>
 							<div className="space-y-3">
-								{suggestion.exercises.map((exercise, index) => (
+								{(suggestion.exercises || []).map((exercise, index) => (
 									<div
 										key={index}
-										className={`p-4 rounded-lg border ${getPriorityColor(exercise.priority)}`}
+										className={`p-4 rounded-lg border ${getPriorityColor(exercise?.priority)}`}
 									>
 										<div className="flex items-center justify-between mb-2">
 											<div className="flex items-center gap-3">
@@ -177,22 +177,22 @@ export function WorkoutSuggestion({ suggestion }: WorkoutSuggestionProps) {
 													{index + 1}
 												</span>
 												<h5 className="font-medium text-slate-900 dark:text-slate-100 capitalize">
-													{exercise.exerciseName}
+													{exercise?.exerciseName || 'Unknown Exercise'}
 												</h5>
-												{exercise.priority === 'high' && (
+												{exercise?.priority === 'high' && (
 													<Badge variant="destructive" className="text-xs">
 														Priority
 													</Badge>
 												)}
 											</div>
 											<div className="text-sm font-mono text-slate-600 dark:text-slate-400">
-												{exercise.suggestedSets} × {exercise.suggestedReps.min}
-												{exercise.suggestedReps.min !== exercise.suggestedReps.max &&
-													`-${exercise.suggestedReps.max}`
+												{exercise?.suggestedSets || 3} × {exercise?.suggestedReps?.min || 8}
+												{exercise?.suggestedReps?.min !== exercise?.suggestedReps?.max &&
+													`-${exercise?.suggestedReps?.max || 12}`
 												} reps
 											</div>
 										</div>
-										{exercise.reason && (
+										{exercise?.reason && (
 											<p className="text-xs text-slate-500 dark:text-slate-400 ml-9">
 												{exercise.reason}
 											</p>

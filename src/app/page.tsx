@@ -88,10 +88,11 @@ export default function HevierDashboard() {
           if (result.success) {
             // Transform unified API response to dashboard format
             const transformedWorkouts = result.data.workouts.slice(0, 10).map((workout: any) => ({
+              id: workout.id,
               date: workout.date, // Keep as string
+              exercises: workout.exercises, // Keep full exercise details
+              totalDuration: workout.totalDuration || 0,
               type: determineWorkoutType(workout.exercises),
-              duration: workout.totalDuration || 0,
-              exercises: workout.exercises.map((ex: any) => ex.name).filter((name: string) => name !== 'Unknown Exercise'),
               totalSets: workout.exercises.reduce((total: number, ex: any) => total + (ex.sets || 0), 0)
             }));
 

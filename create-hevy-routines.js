@@ -17,10 +17,13 @@
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { HevyClient } from 'hevy-client';
-import { ReferenceChartService } from './src/app/lib/reference-chart.ts';
-import { WorkoutAnalyzerService } from './src/app/lib/workout-analyzer.ts';
-import { WorkoutSuggestionService } from './src/app/lib/workout-suggestion.ts';
-import { getHevyExerciseId, getMuscleGroupsForExercise } from './src/app/lib/exercise-mapping.ts';
+import { ReferenceChartService } from './src/app/lib/reference-chart.js';
+import { WorkoutAnalyzerService } from './src/app/lib/workout-analyzer.js';
+import { WorkoutSuggestionService } from './src/app/lib/workout-suggestion.js';
+import { AdvancedWorkoutGenerator } from './src/app/lib/advanced-workout-generator.js';
+import { getHevyExerciseId, getMuscleGroupsForExercise } from './src/app/lib/exercise-mapping.js';
+import { roundToGymWeight, lbsToKg } from './src/app/lib/weight-utils.js';
+import { getDefaultEquipmentPreferences } from './src/app/lib/equipment-preferences.js';
 
 // Load environment variables
 dotenv.config({ path: '.env.local' });
@@ -59,6 +62,10 @@ class HevierRoutineCreator {
 		this.referenceChart = new ReferenceChartService();
 		this.analyzer = new WorkoutAnalyzerService(this.referenceChart);
 		this.suggestionService = new WorkoutSuggestionService(this.referenceChart);
+
+		// Initialize with dumbbell preference for push movements
+		const equipmentPrefs = getDefaultEquipmentPreferences();
+		this.advancedGenerator = new AdvancedWorkoutGenerator(equipmentPrefs);
 
 		console.log('🚀 Hevier AI Routine Creator initialized');
 	}
@@ -143,7 +150,8 @@ class HevierRoutineCreator {
 			}));
 
 			if (convertedWorkouts.length > 0) {
-				console.log('📋 Sample workout:', JSON.stringify(convertedWorkouts[0], null, 2));
+				const sampleWorkout = { ...convertedWorkouts[0], date: convertedWorkouts[0].date.toISOString() };
+				console.log('📋 Sample workout:', JSON.stringify(sampleWorkout, null, 2));
 			}
 
 			return convertedWorkouts;
@@ -792,8 +800,7 @@ class HevierRoutineCreator {
 			console.log('Workout data is array:', Array.isArray(workoutData));
 			console.log('Workout data length:', workoutData?.length);
 
-			// For testing, modify the analyzer to use a wider date range
-			// Create a custom analysis for the demo data
+			// Generate analysis using the custom analyzer for broader date range
 			const weeklyAnalysis = this.analyzeWorkoutDataCustom(workoutData);
 
 			console.log('\n📊 Weekly Volume Analysis:');
@@ -802,25 +809,9 @@ class HevierRoutineCreator {
 				console.log(`${status} ${volume.muscleGroup}: ${volume.actualSets}/${volume.targetMin} sets`);
 			});
 
-			// Determine the next workout type based on PPL rotation
-			const nextWorkoutType = this.determineNextPPLWorkout(workoutData);
-			console.log(`🎯 Determined next workout type: ${nextWorkoutType}`);
-
-			// Generate preferences for the determined workout type
-			const preferences = {
-				splitPreference: 'PPL', // Push/Pull/Legs
-				primaryGoal: 'HYPERTROPHY',
-				workoutDaysPerWeek: 6
-			};
-
-			// Generate specific workout based on determined type
-			const suggestion = this.generateSpecificWorkout(nextWorkoutType, weeklyAnalysis);
-
-			// Set the date for tomorrow
-			const tomorrow = new Date();
-			tomorrow.setDate(tomorrow.getDate() + 1);
-			suggestion.date = tomorrow.toISOString().split('T')[0];
-			suggestion.workoutType = nextWorkoutType;
+			// Use the advanced generator for sophisticated workout generation
+			const suggestion = this.advancedGenerator.generateWorkoutSuggestion(workoutData, weeklyAnalysis);
+			console.log(`🎯 Advanced generator determined: ${suggestion.workoutType} workout for ${suggestion.date || 'today'}`);
 
 			const suggestions = [suggestion];
 
@@ -836,7 +827,9 @@ class HevierRoutineCreator {
 	 */
 	async createHevyRoutine(suggestion) {
 		try {
-			const routineName = `${suggestion.date} - ${suggestion.workoutType} (Hevier AI)`;
+			// Format date properly - the API returns date as YYYY-MM-DD string
+			const formattedDate = suggestion.date || new Date().toISOString().split('T')[0];
+			const routineName = `${formattedDate} - ${suggestion.workoutType} (Hevier AI)`;
 			console.log(`\n🏗️ Creating routine: ${routineName}`);
 
 			// Build exercise data for Hevy
@@ -851,14 +844,25 @@ class HevierRoutineCreator {
 					continue;
 				}
 
-				// Create sets data
-				const sets = [];
-				for (let i = 0; i < exercise.suggestedSets; i++) {
-					sets.push({
+				// Create sets data - use progressive sets if available
+				let sets = [];
+				if (exercise.progressiveSets && exercise.progressiveSets.length > 0) {
+					// Progressive sets with calculated weights and reps
+					sets = exercise.progressiveSets.map((progressiveSet) => ({
 						type: 'normal',
-						weight_kg: null, // User will fill in
-						reps: exercise.suggestedReps.min || 10
-					});
+						// Round to practical gym increments (lbs) then convert to kg for Hevy API
+						weight_kg: lbsToKg(roundToGymWeight(progressiveSet.suggestedWeight)),
+						reps: progressiveSet.targetReps
+					}));
+				} else {
+					// Fallback to uniform sets for exercises without strength data
+					for (let i = 0; i < exercise.suggestedSets; i++) {
+						sets.push({
+							type: 'normal',
+							weight_kg: null, // User will fill in manually
+							reps: exercise.suggestedReps.min || 10
+						});
+					}
 				}
 
 				exercises.push({
@@ -933,7 +937,8 @@ class HevierRoutineCreator {
 
 			console.log(`\n🎯 Generated workout suggestion:`);
 			const suggestion = suggestions[0];
-			console.log(`\n📅 ${suggestion.date} - ${suggestion.workoutType} Day`);
+			const suggestionDate = suggestion.date || new Date().toISOString().split('T')[0];
+			console.log(`\n📅 ${suggestionDate} - ${suggestion.workoutType} Day`);
 			console.log(`   Duration: ~${suggestion.estimatedDuration} minutes`);
 			console.log(`   Exercises: ${suggestion.exercises.length}`);
 			console.log(`   Focus: ${suggestion.focusMuscleGroups.join(', ')}`);
@@ -941,13 +946,47 @@ class HevierRoutineCreator {
 				console.log(`   Notes: ${suggestion.notes}`);
 			}
 
-			// Show exercise breakdown
-			console.log(`\n📋 Exercise Breakdown:`);
+			// Show enhanced exercise breakdown with progressive sets
+			console.log(`\n📋 Intelligent Exercise Breakdown:`);
 			suggestion.exercises.forEach((exercise, index) => {
-				const repsText = exercise.suggestedReps.min === exercise.suggestedReps.max ?
-					`${exercise.suggestedReps.min} reps` :
-					`${exercise.suggestedReps.min}-${exercise.suggestedReps.max} reps`;
-				console.log(`   ${index + 1}. ${exercise.exerciseName} - ${exercise.suggestedSets} sets x ${repsText}`);
+				console.log(`\n   ${index + 1}. ${exercise.exerciseName.toUpperCase()}`);
+
+				// Display progressive sets if available
+				if (exercise.progressiveSets && exercise.progressiveSets.length > 0) {
+					console.log(`       🎯 Progressive Sets (Reverse Pyramid Training):`);
+					exercise.progressiveSets.forEach((set, setIndex) => {
+						const weight = set.suggestedWeight > 0 ? `${set.suggestedWeight} lbs` : 'Bodyweight';
+						const rpe = set.targetRPE ? ` @ RPE ${set.targetRPE}` : '';
+						const rest = Math.round(set.restSeconds / 60);
+						console.log(`       Set ${set.setNumber}: ${set.targetReps} reps × ${weight}${rpe} (${rest}min rest)`);
+						if (set.notes) {
+							console.log(`          💡 ${set.notes}`);
+						}
+					});
+
+					// Display strength data if available
+					if (exercise.strengthData && exercise.strengthData.confidenceScore > 0.1) {
+						const confidence = Math.round(exercise.strengthData.confidenceScore * 100);
+						const oneRM = Math.round(exercise.strengthData.estimated1RM * 10) / 10;
+						console.log(`       📊 Strength Data: Est. 1RM ${oneRM} lbs (${confidence}% confidence)`);
+
+						const recentBest = exercise.strengthData.recentBest;
+						const daysAgo = Math.round((new Date() - new Date(recentBest.date)) / (1000 * 60 * 60 * 24));
+						console.log(`       📈 Recent Best: ${recentBest.reps} reps @ ${recentBest.weight} lbs (${daysAgo} days ago)`);
+					}
+				} else {
+					// Fallback to standard format for exercises without strength data
+					const repsText = exercise.suggestedReps.min === exercise.suggestedReps.max ?
+						`${exercise.suggestedReps.min} reps` :
+						`${exercise.suggestedReps.min}-${exercise.suggestedReps.max} reps`;
+					console.log(`       Standard: ${exercise.suggestedSets} sets × ${repsText}`);
+					if (exercise.notes) {
+						console.log(`       💡 ${exercise.notes}`);
+					}
+				}
+
+				console.log(`       🎯 Target: ${exercise.muscleGroups.join(', ')}`);
+				console.log(`       ⚡ Priority: ${exercise.priority}`);
 			});
 
 			// Create routine in Hevy (or preview in dry run mode)

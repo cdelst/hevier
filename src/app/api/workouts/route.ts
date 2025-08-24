@@ -1,6 +1,8 @@
 // Unified workout API service - used by both UI and script
 import { NextRequest, NextResponse } from 'next/server';
+import { AdvancedWorkoutGenerator, WeeklyAnalysis } from '../../lib/advanced-workout-generator.js';
 import { getMuscleGroupsForExercise, getHevyExerciseId } from '../../lib/exercise-mapping.js';
+import { getDefaultEquipmentPreferences } from '../../lib/equipment-preferences.js';
 
 /**
  * Unified workout fetching and analysis service
@@ -131,25 +133,38 @@ export async function GET(request: NextRequest) {
 					console.log(`🔍 Mapping exercise: "${exerciseName}" (ID: ${exerciseId})`);
 				}
 
-				// Use embedded exercise mapping
-				const muscleGroups = getMuscleGroupsFromExercise(exerciseName, exerciseId);
+				// Use comprehensive exercise mapping
+				const muscleGroups = getMuscleGroupsForExercise(exerciseId);
 
-				if (exerciseId && muscleGroups.length > 0 && !muscleGroups.includes('UNKNOWN')) {
+				if (exerciseId && muscleGroups.length > 0) {
 					console.log(`✅ Mapped exercise "${exerciseName}" (${exerciseId}) to:`, muscleGroups);
-				} else if (muscleGroups.includes('UNKNOWN')) {
+				} else if (exerciseId) {
 					console.warn(`⚠️ Unknown exercise: "${exerciseName}" (${exerciseId})`);
 				}
 
-				const sets = (exercise.sets || []).filter((set: any) => set.set_type !== 'warmup').length;
+				// Convert detailed set information
+				const detailedSets = (exercise.sets || []).map((set: any) => ({
+					reps: set.reps || 0,
+					weight: set.weight_kg || 0,
+					rpe: set.rpe,
+					isWarmup: set.type === 'warmup',
+					setType: set.type || 'normal'
+				}));
+
+				// Filter working sets for basic counts
+				const workingSets = detailedSets.filter((set: any) => !set.isWarmup);
+
+				const totalVolume = workingSets.reduce((sum: number, set: any) => {
+					return sum + (set.weight * set.reps);
+				}, 0);
 
 				return {
 					id: exerciseId,
 					name: exerciseName,
 					muscleGroups,
-					sets,
-					totalVolume: (exercise.sets || []).reduce((sum: number, set: any) => {
-						return sum + (set.weight_kg || 0) * (set.reps || 0);
-					}, 0)
+					sets: workingSets.length, // Keep for backward compatibility
+					detailedSets, // New: preserve all set information
+					totalVolume
 				};
 			});
 
@@ -161,33 +176,102 @@ export async function GET(request: NextRequest) {
 			};
 		});
 
-		// Basic analysis (simplified version)
+		// Basic analysis (simplified version) - 14-day data for overall analysis
 		const totalWorkouts = convertedWorkouts.length;
 		const muscleGroupVolumes = calculateBasicVolumes(convertedWorkouts);
 		const overallScore = calculateBasicScore(muscleGroupVolumes);
 
+		// Calculate 7-day muscle group volumes specifically for the completion status chart
+		const sevenDaysAgo = new Date();
+		sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+		sevenDaysAgo.setHours(0, 0, 0, 0);
+
+		const last7DaysWorkouts = convertedWorkouts.filter(workout => {
+			const workoutDate = new Date(workout.date);
+			return workoutDate >= sevenDaysAgo;
+		});
+
+		const muscleGroupVolumes7Day = calculateBasicVolumes(last7DaysWorkouts);
+
+		console.log(`📊 7-day muscle group analysis: ${last7DaysWorkouts.length} workouts from last 7 days`);
+
 		const analysis = {
 			totalWorkouts,
 			muscleGroupVolumes,
+			muscleGroupVolumes7Day, // Add 7-day data for completion chart
 			overallScore,
 			dateRange: {
 				start: cutoffDate.toISOString().split('T')[0],
 				end: new Date().toISOString().split('T')[0]
+			},
+			dateRange7Day: {
+				start: sevenDaysAgo.toISOString().split('T')[0],
+				end: new Date().toISOString().split('T')[0]
 			}
 		};
 
-		// Generate workout suggestions
-		const suggestion = generateWorkoutSuggestion(convertedWorkouts, muscleGroupVolumes);
+		// Generate workout suggestions using advanced generator with dumbbell preference for push movements
+		const equipmentPrefs = getDefaultEquipmentPreferences();
+		const advancedGenerator = new AdvancedWorkoutGenerator(equipmentPrefs);
+
+		// Convert simplified workouts to proper WorkoutSession format for the generator
+		const workoutSessions = convertedWorkouts.map((workout: any) => ({
+			...workout,
+			userId: 'current-user',
+			date: new Date(workout.date),
+			type: 'MIXED', // Will be determined by advanced generator
+			isCompleted: true,
+			createdAt: new Date(),
+			updatedAt: new Date()
+		}));
+
+		const weeklyAnalysis: WeeklyAnalysis = {
+			muscleGroupVolumes: muscleGroupVolumes.map(volume => ({
+				...volume,
+				muscleGroup: volume.muscleGroup as any // Type assertion for compatibility
+			})),
+			overallScore
+		};
+
+		const suggestion = advancedGenerator.generateWorkoutSuggestion(workoutSessions, weeklyAnalysis);
+
+		// Convert back to enhanced format for API response (now includes progressive sets)
+		const simplifiedSuggestion = {
+			workoutType: suggestion.workoutType,
+			date: suggestion.targetDate.toISOString().split('T')[0],
+			exercises: suggestion.exercises.map(ex => ({
+				exerciseName: ex.exerciseName,
+				muscleGroups: ex.muscleGroups,
+				suggestedSets: ex.suggestedSets,
+				suggestedReps: ex.suggestedReps,
+				restTime: 120, // Default rest time for API compatibility
+				// NEW: Include progressive sets and strength data
+				progressiveSets: ex.progressiveSets || [],
+				strengthData: ex.strengthData ? {
+					estimated1RM: ex.strengthData.estimated1RM,
+					confidenceScore: ex.strengthData.confidenceScore,
+					recentBest: ex.strengthData.recentBest
+				} : null,
+				priority: ex.priority,
+				reason: ex.reason,
+				notes: ex.notes,
+				equipment: ex.equipment || [],
+				alternatives: ex.alternatives || []
+			})),
+			estimatedDuration: suggestion.estimatedDuration,
+			focusAreas: suggestion.focusMuscleGroups,
+			notes: suggestion.notes || `AI-generated ${suggestion.workoutType} workout`
+		};
 
 		console.log(`🔄 Analysis complete: ${totalWorkouts} workouts, ${overallScore}% score`);
-		console.log(`🎯 Generated suggestion: ${suggestion.workoutType} workout for ${suggestion.date}`);
+		console.log(`🎯 Generated suggestion: ${simplifiedSuggestion.workoutType} workout for ${simplifiedSuggestion.date}`);
 
 		return NextResponse.json({
 			success: true,
 			data: {
 				workouts: convertedWorkouts,
 				analysis,
-				suggestion,
+				suggestion: simplifiedSuggestion,
 				metadata: {
 					totalFetched: allRecentWorkouts.length,
 					pagesProcessed: pageCount,
@@ -211,71 +295,9 @@ export async function GET(request: NextRequest) {
 	}
 }
 
-// Basic exercise mapping (embedded for API route compatibility)
-const BASIC_EXERCISE_MAPPING = {
-	// Real exercise IDs from your Hevy workout data
-	'C7973E0E': ['QUADS', 'GLUTES'], // Leg Press (Machine)
-	'3601968B': ['CHEST', 'TRICEPS', 'SHOULDERS'], // Bench Press (Dumbbell)
-	'D3E2AB55': ['CHEST'], // Incline Chest Fly (Dumbbell)
-	'7EB3F7C3': ['CHEST', 'TRICEPS'], // Chest Press (Machine)
-	'94B7239B': ['TRICEPS'], // Triceps Rope Pushdown
-	'd8bb68ec-d1c0-484f-908b-92899717a704': ['ABS'], // Weighted Side Bend
-	'9289aeaa-972e-4505-8556-86c4a68a0b84': ['ABS'], // Abs
-	'33EDD7DB': ['CARDIO'], // Walking
-	'9237BAD1': ['SHOULDERS', 'TRICEPS'], // Seated Shoulder Press (Machine)
-	'6A6C31A5': ['BACK', 'BICEPS'], // Lat Pulldown (Cable)
-	'0393F233': ['BACK', 'BICEPS'], // Seated Cable Row - V Grip (Cable)
-	'F1E57334': ['BACK', 'BICEPS'], // Dumbbell Row
-	'DDB29047': ['FOREARMS', 'BICEPS'], // Behind the Back Bicep Wrist Curl (Barbell)
-	'37FCC2BB': ['BICEPS'], // Bicep Curl (Dumbbell)
-	'1E9A6B8E': ['BICEPS'], // Preacher Curl (Machine)
-	'2C37EC5E': ['BACK', 'BICEPS'], // Pull Up (Assisted)
-	'47B9DF13': ['CALVES'], // Calf Extension (Machine)
-	'527DA061': ['ABS'], // Stretching
-	'651F844C': ['CHEST'], // Cable Fly Crossovers
-	'582ADA23': ['BICEPS'], // Overhead Curl (Cable)
 
-	// Keep original mapping for fallback
-	'79D0BB3A': ['CHEST', 'TRICEPS', 'SHOULDERS'], // Bench Press
-	'7B8D84E8': ['SHOULDERS', 'TRICEPS'], // Overhead Press
-	'C43825EA': ['CHEST', 'TRICEPS'], // Push-up variations
-	'12017185': ['CHEST'], // Chest Fly
-	'A41C7261': ['ABS'], // Bicycle Crunch
-	'1006DF48': ['FOREARMS'], // Wrist Curl
-	'06745E58': ['CALVES'], // Standing Calf Raise
-	'2F8D3067': ['TRICEPS'], // Tricep Extension
-	'243710DE': ['CARDIO'], // Treadmill
-};
 
-// Full muscle group mapping using embedded basic mapping + fallback
-function getMuscleGroupsFromExercise(exerciseName: string, exerciseId?: string): string[] {
-	// First try embedded mapping by ID
-	if (exerciseId && BASIC_EXERCISE_MAPPING[exerciseId as keyof typeof BASIC_EXERCISE_MAPPING]) {
-		return BASIC_EXERCISE_MAPPING[exerciseId as keyof typeof BASIC_EXERCISE_MAPPING];
-	}
 
-	// Fallback to name-based mapping
-	return inferMuscleGroupsFromName(exerciseName);
-}
-
-// Basic muscle group inference (fallback)
-function inferMuscleGroupsFromName(exerciseName: string): string[] {
-	const name = exerciseName.toLowerCase();
-
-	// Basic mapping - fallback when full mapping fails
-	if (name.includes('bench') || name.includes('chest')) return ['CHEST', 'TRICEPS'];
-	if (name.includes('squat') || name.includes('leg press')) return ['QUADS', 'GLUTES'];
-	if (name.includes('deadlift')) return ['BACK', 'HAMSTRINGS', 'GLUTES'];
-	if (name.includes('row') || name.includes('pulldown')) return ['BACK', 'BICEPS'];
-	if (name.includes('press') && name.includes('shoulder')) return ['SHOULDERS', 'TRICEPS'];
-	if (name.includes('curl') && name.includes('bicep')) return ['BICEPS'];
-	if (name.includes('extension') && name.includes('leg')) return ['QUADS'];
-	if (name.includes('curl') && name.includes('leg')) return ['HAMSTRINGS'];
-	if (name.includes('calf')) return ['CALVES'];
-	if (name.includes('abs') || name.includes('crunch')) return ['ABS'];
-
-	return ['UNKNOWN']; // Fallback
-}
 
 // Basic volume calculation (simplified)
 function calculateBasicVolumes(workouts: any[]) {
@@ -358,169 +380,4 @@ function calculateBasicScore(muscleGroupVolumes: any[]): number {
 	return Math.round(totalScore / weightedTotal);
 }
 
-// Generate workout suggestion based on analysis
-function generateWorkoutSuggestion(workouts: any[], muscleGroupVolumes: any[]) {
-	// Determine next workout type (simplified PPL logic)
-	const workoutType = determineNextWorkoutType(workouts);
-
-	// Get tomorrow's date
-	const tomorrow = new Date();
-	tomorrow.setDate(tomorrow.getDate() + 1);
-	const dateStr = tomorrow.toISOString().split('T')[0];
-
-	// Find top 3 deficit muscle groups
-	const deficits = muscleGroupVolumes
-		.filter(v => v.deficit > 0)
-		.sort((a, b) => b.deficit - a.deficit)
-		.slice(0, 3);
-
-	// Generate exercises based on workout type and deficits
-	const exercises = generateExercises(workoutType, deficits);
-
-	// Calculate estimated duration (roughly 10 min per exercise + 10 min setup/warmup)
-	const estimatedDuration = Math.max(30, exercises.length * 10 + 10);
-
-	// Determine focus areas
-	const focus = getFocusAreas(workoutType, deficits);
-
-	return {
-		workoutType,
-		date: dateStr,
-		exercises,
-		estimatedDuration,
-		focus,
-		notes: `AI-generated ${workoutType} workout targeting your highest deficit muscle groups.`
-	};
-}
-
-// Simplified PPL determination
-function determineNextWorkoutType(workouts: any[]): string {
-	if (workouts.length === 0) return 'PUSH';
-
-	// Simple rotation: look at last workout and suggest next in cycle
-	const lastWorkout = workouts[0]; // Most recent workout
-	const lastType = classifyWorkoutType(lastWorkout.exercises);
-
-	// PPL cycle: PUSH → PULL → LEGS → PUSH...
-	switch (lastType) {
-		case 'PUSH': return 'PULL';
-		case 'PULL': return 'LEGS';
-		case 'LEGS': return 'PUSH';
-		default: return 'PUSH'; // Default if mixed/unknown
-	}
-}
-
-// Classify workout type based on exercises
-function classifyWorkoutType(exercises: any[]): string {
-	const pushMuscles = ['CHEST', 'SHOULDERS', 'TRICEPS'];
-	const pullMuscles = ['BACK', 'BICEPS'];
-	const legMuscles = ['QUADS', 'HAMSTRINGS', 'GLUTES', 'CALVES'];
-
-	let pushSets = 0, pullSets = 0, legSets = 0, totalSets = 0;
-
-	exercises.forEach(exercise => {
-		const sets = exercise.sets || 0;
-		const muscleGroups = exercise.muscleGroups || [];
-
-		totalSets += sets;
-
-		muscleGroups.forEach((muscle: string) => {
-			if (pushMuscles.includes(muscle)) pushSets += sets;
-			else if (pullMuscles.includes(muscle)) pullSets += sets;
-			else if (legMuscles.includes(muscle)) legSets += sets;
-		});
-	});
-
-	if (totalSets === 0) return 'MIXED';
-
-	const pushPercent = (pushSets / totalSets) * 100;
-	const pullPercent = (pullSets / totalSets) * 100;
-	const legPercent = (legSets / totalSets) * 100;
-
-	if (pushPercent > 50) return 'PUSH';
-	if (pullPercent > 50) return 'PULL';
-	if (legPercent > 50) return 'LEGS';
-
-	return 'MIXED';
-}
-
-// Generate exercises for the workout type
-function generateExercises(workoutType: string, deficits: any[]) {
-	const exercises = [];
-
-	// Core exercises based on workout type
-	switch (workoutType) {
-		case 'PUSH':
-			exercises.push(
-				{ exerciseName: 'bench press', suggestedSets: 4, suggestedReps: { min: 5, max: 12 }, priority: 'high' },
-				{ exerciseName: 'incline press', suggestedSets: 3, suggestedReps: { min: 6, max: 12 } },
-				{ exerciseName: 'overhead press', suggestedSets: 3, suggestedReps: { min: 5, max: 10 } },
-				{ exerciseName: 'tricep dips', suggestedSets: 3, suggestedReps: { min: 8, max: 15 } }
-			);
-			break;
-		case 'PULL':
-			exercises.push(
-				{ exerciseName: 'deadlift', suggestedSets: 4, suggestedReps: { min: 3, max: 8 }, priority: 'high' },
-				{ exerciseName: 'pull ups', suggestedSets: 3, suggestedReps: { min: 5, max: 12 } },
-				{ exerciseName: 'barbell row', suggestedSets: 3, suggestedReps: { min: 6, max: 12 } },
-				{ exerciseName: 'bicep curl', suggestedSets: 3, suggestedReps: { min: 8, max: 15 } }
-			);
-			break;
-		case 'LEGS':
-			exercises.push(
-				{ exerciseName: 'squat', suggestedSets: 4, suggestedReps: { min: 5, max: 12 }, priority: 'high' },
-				{ exerciseName: 'leg press', suggestedSets: 3, suggestedReps: { min: 8, max: 15 } },
-				{ exerciseName: 'leg curl', suggestedSets: 3, suggestedReps: { min: 10, max: 15 } },
-				{ exerciseName: 'calf raise', suggestedSets: 3, suggestedReps: { min: 12, max: 20 } }
-			);
-			break;
-	}
-
-	// Add deficit-focused exercises
-	deficits.forEach((deficit, index) => {
-		if (index < 2) { // Only add exercises for top 2 deficits
-			const deficitExercise = getDeficitExercise(deficit.muscleGroup);
-			if (deficitExercise) {
-				exercises.push({
-					...deficitExercise,
-					reason: `Targeting ${deficit.muscleGroup.toLowerCase()} deficit (-${deficit.deficit} sets)`
-				});
-			}
-		}
-	});
-
-	return exercises;
-}
-
-// Get exercise for specific deficit muscle group
-function getDeficitExercise(muscleGroup: string) {
-	const deficitExercises = {
-		'ABS': { exerciseName: 'plank', suggestedSets: 3, suggestedReps: { min: 30, max: 60 } },
-		'NECK': { exerciseName: 'neck curl', suggestedSets: 2, suggestedReps: { min: 12, max: 15 } },
-		'FOREARMS': { exerciseName: 'wrist curl', suggestedSets: 2, suggestedReps: { min: 15, max: 20 } },
-		'CALVES': { exerciseName: 'calf raise', suggestedSets: 3, suggestedReps: { min: 15, max: 20 } },
-		'CARDIO': { exerciseName: 'treadmill walk', suggestedSets: 1, suggestedReps: { min: 10, max: 15 } },
-	};
-
-	return deficitExercises[muscleGroup as keyof typeof deficitExercises] || null;
-}
-
-// Get focus areas for the workout
-function getFocusAreas(workoutType: string, deficits: any[]): string[] {
-	const baseAreas = {
-		'PUSH': ['CHEST', 'TRICEPS', 'SHOULDERS'],
-		'PULL': ['BACK', 'BICEPS'],
-		'LEGS': ['QUADS', 'HAMSTRINGS', 'GLUTES']
-	};
-
-	const focus = baseAreas[workoutType as keyof typeof baseAreas] || [];
-
-	// Add top deficit areas
-	deficits.slice(0, 2).forEach(deficit => {
-		if (!focus.includes(deficit.muscleGroup)) {
-			focus.push(deficit.muscleGroup);
-		}
-	});
-
-	return focus;
-}
+// Old simple workout generation functions have been removed - now using AdvancedWorkoutGenerator

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getHevyExerciseId as getExerciseId } from '../../lib/exercise-mapping.js';
+import { roundToGymWeight, lbsToKg } from '../../lib/weight-utils.js';
 
 /**
  * API endpoint to create Hevy routines from UI suggestions
@@ -26,20 +28,41 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		// Convert UI suggestion format to Hevy API format
+		// Convert suggestion format to Hevy API format with progressive sets
 		const routinePayload = {
 			routine: {
-				title: `${suggestion.date} - ${suggestion.workoutType} (Hevier AI)`,
-				exercises: suggestion.exercises.map((exercise: any, index: number) => ({
-					exercise_template_id: getHevyExerciseId(exercise.exerciseName),
-					superset_id: null,
-					rest_seconds: getRestTime(exercise.exerciseName),
-					sets: Array.from({ length: exercise.suggestedSets }, () => ({
-						type: "normal",
-						weight_kg: null,
-						reps: exercise.suggestedReps.min
-					}))
-				})).filter((ex: any) => ex.exercise_template_id), // Filter out unmapped exercises
+				title: `${suggestion.date} - ${suggestion.workoutType}`,
+				exercises: suggestion.exercises.map((exercise: any, index: number) => {
+					const exerciseId = getExerciseId(exercise.exerciseName);
+					if (!exerciseId) return null; // Skip unmapped exercises
+
+					// Use progressive sets if available, otherwise create uniform sets
+					let sets;
+					if (exercise.progressiveSets && exercise.progressiveSets.length > 0) {
+						// Progressive sets with calculated weights and reps  
+						sets = exercise.progressiveSets.map((progressiveSet: any) => ({
+							type: "normal",
+							// Round to practical gym increments (lbs) then convert to kg for Hevy API
+							weight_kg: lbsToKg(roundToGymWeight(progressiveSet.suggestedWeight)),
+							reps: progressiveSet.targetReps,
+							// Note: RPE and rest time can't be set in routine templates, only actual workouts
+						}));
+					} else {
+						// Fallback to uniform sets for exercises without strength data
+						sets = Array.from({ length: exercise.suggestedSets }, (_, setIndex) => ({
+							type: "normal",
+							weight_kg: null, // User will need to set weight manually
+							reps: exercise.suggestedReps.min + Math.floor((exercise.suggestedReps.max - exercise.suggestedReps.min) * setIndex / (exercise.suggestedSets - 1)) || exercise.suggestedReps.min
+						}));
+					}
+
+					return {
+						exercise_template_id: exerciseId,
+						superset_id: null,
+						rest_seconds: exercise.progressiveSets?.[0]?.restSeconds || exercise.restTime || 120,
+						sets
+					};
+				}).filter((ex: any) => ex !== null), // Filter out unmapped exercises
 				folder_id: null
 			}
 		};
@@ -97,62 +120,6 @@ export async function POST(request: NextRequest) {
 			message: error instanceof Error ? error.message : 'Unknown error'
 		}, { status: 500 });
 	}
-}
-
-// Basic exercise name to Hevy ID mapping (simplified version)
-function getHevyExerciseId(exerciseName: string): string | null {
-	const exerciseMap = {
-		// Push exercises
-		'bench press': '79D0BB3A',
-		'incline press': 'C43825EA',
-		'overhead press': '7B8D84E8',
-		'tricep dips': '2F8D3067',
-
-		// Pull exercises
-		'deadlift': '1234ABCD', // Replace with actual ID
-		'pull ups': '5678EFGH', // Replace with actual ID
-		'barbell row': '9012IJKL', // Replace with actual ID
-		'bicep curl': 'MNOP3456', // Replace with actual ID
-
-		// Leg exercises
-		'squat': 'QRST7890', // Replace with actual ID
-		'leg press': 'UVWX1234', // Replace with actual ID
-		'leg curl': 'YZ123456', // Replace with actual ID
-		'calf raise': '06745E58',
-
-		// Accessories
-		'plank': 'A41C7261',
-		'neck curl': 'ABC12345', // Replace with actual ID
-		'wrist curl': '1006DF48',
-		'treadmill walk': '243710DE',
-	};
-
-	const mapped = exerciseMap[exerciseName.toLowerCase() as keyof typeof exerciseMap];
-
-	if (!mapped) {
-		console.warn(`⚠️ No Hevy ID found for exercise: ${exerciseName}`);
-		return null;
-	}
-
-	return mapped;
-}
-
-// Get appropriate rest time for exercise type
-function getRestTime(exerciseName: string): number {
-	const name = exerciseName.toLowerCase();
-
-	// Compound movements = longer rest
-	if (name.includes('deadlift') || name.includes('squat') || name.includes('bench')) {
-		return 180; // 3 minutes
-	}
-
-	// Isolation movements = shorter rest
-	if (name.includes('curl') || name.includes('raise') || name.includes('fly')) {
-		return 60; // 1 minute
-	}
-
-	// Default rest time
-	return 120; // 2 minutes
 }
 
 // Handle preflight CORS requests

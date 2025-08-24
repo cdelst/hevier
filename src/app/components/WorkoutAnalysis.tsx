@@ -3,7 +3,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Target, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, CheckCircle2, AlertTriangle, BarChart3 } from 'lucide-react';
+import { WorkoutRadarChart } from './WorkoutRadarChart';
 
 interface MuscleGroupVolume {
   muscleGroup: string;
@@ -16,6 +17,7 @@ interface MuscleGroupVolume {
 
 interface Analysis {
   muscleGroupVolumes: MuscleGroupVolume[];
+  muscleGroupVolumes7Day?: MuscleGroupVolume[]; // 7-day data for completion chart
   overallScore: number;
   totalWorkouts: number;
   recommendations?: string[];
@@ -97,8 +99,8 @@ export function WorkoutAnalysis({ analysis, detailed = false }: WorkoutAnalysisP
                 <span className="font-medium">Overall Progress</span>
                 <span>{analysis.overallScore}%</span>
               </div>
-              <Progress 
-                value={analysis.overallScore} 
+              <Progress
+                value={analysis.overallScore}
                 className="h-2"
               />
             </div>
@@ -111,7 +113,7 @@ export function WorkoutAnalysis({ analysis, detailed = false }: WorkoutAnalysisP
                 </h4>
                 <div className="grid gap-2">
                   {priorityMuscles.map((volume) => (
-                    <div 
+                    <div
                       key={volume.muscleGroup}
                       className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800"
                     >
@@ -130,42 +132,74 @@ export function WorkoutAnalysis({ analysis, detailed = false }: WorkoutAnalysisP
               </div>
             )}
 
-            {/* Muscle Group Breakdown */}
+            {/* Radar Chart Visualization */}
+            <div className="mt-6">
+              <div className="flex items-center gap-2 mb-4">
+                <BarChart3 className="h-4 w-4 text-slate-500" />
+                <div>
+                  <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Muscle Group Completion Status
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Last 7 days
+                  </p>
+                </div>
+              </div>
+
+              <WorkoutRadarChart
+                muscleGroupVolumes={analysis.muscleGroupVolumes7Day || analysis.muscleGroupVolumes}
+                className="mt-4"
+              />
+            </div>
+
+            {/* Detailed List (for detailed view) */}
             {detailed && (
-              <div className="mt-6">
+              <div className="mt-8">
                 <h4 className="text-sm font-medium mb-4 text-slate-700 dark:text-slate-300">
                   Detailed Breakdown
                 </h4>
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {analysis.muscleGroupVolumes.map((volume) => (
-                    <div key={volume.muscleGroup} className="space-y-2">
-                      <div className="flex items-center justify-between">
+                    <div
+                      key={volume.muscleGroup}
+                      className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700"
+                    >
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <div className={getStatusColor(volume)}>
                             {getStatusIcon(volume)}
                           </div>
-                          <span className="font-medium text-sm">
+                          <span className="font-medium text-sm capitalize">
                             {volume.muscleGroup.toLowerCase()}
                           </span>
                         </div>
-                        <div className="text-sm text-slate-600 dark:text-slate-400">
-                          {volume.actualSets}/{volume.targetMin} sets
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          {Math.round((volume.actualSets / volume.targetMin) * 100)}%
                         </div>
                       </div>
-                      <Progress 
-                        value={calculateProgress(volume)}
-                        className="h-2"
-                      />
-                      {volume.deficit > 0 && (
-                        <div className="text-xs text-red-600 dark:text-red-400">
-                          Need {volume.deficit} more sets
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
+                          <span>Sets: {volume.actualSets}/{volume.targetMin}</span>
+                          <span>Target: {volume.targetMin}-{volume.targetMax}</span>
                         </div>
-                      )}
-                      {volume.surplus > 5 && (
-                        <div className="text-xs text-yellow-600 dark:text-yellow-400">
-                          {volume.surplus} sets over target
-                        </div>
-                      )}
+
+                        <Progress
+                          value={calculateProgress(volume)}
+                          className="h-1.5"
+                        />
+
+                        {volume.deficit > 0 && (
+                          <div className="text-xs text-red-600 dark:text-red-400">
+                            Need {volume.deficit} more sets
+                          </div>
+                        )}
+                        {volume.surplus > 5 && (
+                          <div className="text-xs text-yellow-600 dark:text-yellow-400">
+                            {volume.surplus} sets over target
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -193,3 +227,4 @@ export function WorkoutAnalysis({ analysis, detailed = false }: WorkoutAnalysisP
     </div>
   );
 }
+

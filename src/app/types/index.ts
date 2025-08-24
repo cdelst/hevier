@@ -23,6 +23,15 @@ export type GoalType = 'STRENGTH' | 'HYPERTROPHY' | 'MIXED';
 
 export type SplitType = 'PPL' | 'UPPER_LOWER' | 'FULL_BODY';
 
+export type EquipmentType =
+	| 'BARBELL'
+	| 'DUMBBELL'
+	| 'CABLE'
+	| 'MACHINE'
+	| 'BODYWEIGHT'
+	| 'RESISTANCE_BAND'
+	| 'KETTLEBELL';
+
 // Reference Chart Types (from reference_cheatsheet.json)
 export interface ReferenceExercise {
 	name: string;
@@ -63,12 +72,27 @@ export interface ReferenceChart {
 }
 
 // User and Profile Types
+export interface EquipmentPreferences {
+	// Equipment availability
+	availableEquipment: EquipmentType[];
+
+	// Equipment preferences for specific movement patterns (now supports arrays!)
+	pushMovements: EquipmentType[] | 'MIXED' | 'ANY'; // e.g., ['CABLE', 'DUMBBELL', 'BODYWEIGHT']
+	pullMovements: EquipmentType[] | 'MIXED' | 'ANY'; // e.g., ['CABLE', 'DUMBBELL']
+	legMovements: EquipmentType[] | 'MIXED' | 'ANY'; // e.g., ['BARBELL', 'DUMBBELL', 'MACHINE']
+
+	// Specific exercise preferences
+	preferCompound: boolean; // Favor compound over isolation movements
+	preferUnilateral: boolean; // Favor single-arm/leg exercises (dumbbells excel here)
+	preferFreeWeights: boolean; // Favor free weights over machines
+}
+
 export interface UserPreferences {
 	primaryGoal: GoalType;
 	workoutDaysPerWeek: number; // 3-6 days
 	splitPreference: SplitType;
 	experienceLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
-	availableEquipment: string[]; // e.g., ['barbell', 'dumbbells', 'cables']
+	equipment: EquipmentPreferences;
 }
 
 export interface UserProfile {
@@ -91,6 +115,33 @@ export interface ExerciseSet {
 	isWarmup?: boolean;
 }
 
+// Progressive set structure for intelligent routine generation
+export interface ProgressiveSet {
+	setNumber: number;
+	targetReps: number;
+	suggestedWeight: number;
+	targetRPE: number;
+	restSeconds: number;
+	notes?: string;
+}
+
+// Strength data for exercise performance analysis
+export interface StrengthData {
+	exerciseId: string;
+	exerciseName: string;
+	estimated1RM: number;
+	recentBest: {
+		weight: number;
+		reps: number;
+		rpe?: number;
+		date: Date;
+	};
+	averageIntensity: number;
+	volumeProgression: number;
+	strengthProgression: number;
+	confidenceScore: number;
+}
+
 export interface Exercise {
 	id: string;
 	hevyExerciseId?: string;
@@ -99,7 +150,7 @@ export interface Exercise {
 	referenceCategory?: string; // Maps to reference chart exercise name
 	sets: ExerciseSet[];
 	notes?: string;
-	equipment?: string[];
+	equipment?: EquipmentType[];
 }
 
 export interface WorkoutSession {
@@ -153,6 +204,12 @@ export interface ExerciseSuggestion {
 	priority: 'HIGH' | 'MEDIUM' | 'LOW';
 	reason: string; // e.g., "Chest volume deficit of 5 sets"
 	alternatives?: string[]; // Alternative exercise names
+	// New: Progressive set structure with intelligent weights
+	progressiveSets?: ProgressiveSet[];
+	strengthData?: StrengthData;
+	estimatedDuration?: number;
+	equipment?: EquipmentType[];
+	notes?: string;
 }
 
 export interface WorkoutSuggestion {
