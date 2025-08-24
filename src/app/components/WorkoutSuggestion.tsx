@@ -29,7 +29,8 @@ interface Suggestion {
 	date: string;
 	exercises: Exercise[];
 	estimatedDuration: number;
-	focus: string[];
+	focus?: string[]; // Optional for backward compatibility
+	focusAreas?: string[]; // Optional for API compatibility
 	notes?: string;
 }
 
@@ -102,7 +103,7 @@ export function WorkoutSuggestion({ suggestion }: WorkoutSuggestionProps) {
 		}
 	};
 
-	const getPriorityColor = (priority: string) => {
+	const getPriorityColor = (priority: string | undefined) => {
 		switch (priority?.toLowerCase()) {
 			case 'high': return 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20';
 			case 'medium': return 'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20';

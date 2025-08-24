@@ -839,46 +839,46 @@ export const HEVY_EXERCISE_MAP: Record<string, string> = {
 	'glute kickback': 'CBA02382', // Glute Kickback (Machine)
 
 	// Additional push exercises
-	'tricep extension': '2F8D3067', // Triceps Extension (Barbell)
-	'triceps extension': '2F8D3067', // Triceps Extension (Barbell)
-	'skullcrusher': '875F585F', // Skullcrusher (Barbell)
-	'skull crusher': '875F585F', // Skullcrusher (Barbell)
-	'skull crushers': '875F585F', // Skullcrusher (Barbell)
-	'close grip bench press': '35B51B87', // Bench Press - Close Grip (Barbell)
-	'close-grip bench press': '35B51B87', // Bench Press - Close Grip (Barbell)
-	'incline bench press': '50DFDFAB', // Incline Bench Press (Barbell)
+	// 'tricep extension': '2F8D3067', // Triceps Extension (Barbell)
+	// 'triceps extension': '2F8D3067', // Triceps Extension (Barbell)
+	// 'skullcrusher': '875F585F', // Skullcrusher (Barbell)
+	// 'skull crusher': '875F585F', // Skullcrusher (Barbell)
+	// 'skull crushers': '875F585F', // Skullcrusher (Barbell)
+	// 'close grip bench press': '35B51B87', // Bench Press - Close Grip (Barbell)
+	// 'close-grip bench press': '35B51B87', // Bench Press - Close Grip (Barbell)
+	// 'incline bench press': '50DFDFAB', // Incline Bench Press (Barbell)
 	'incline press': '50DFDFAB', // Incline Bench Press (Barbell)
 
 	// Reference cheatsheet specific exercises
-	'dumbbell press': '3601968B', // Dumbbell Bench Press
+	// 'dumbbell press': '3601968B', // Dumbbell Bench Press
 	'incline dumbbell press': '07B38369', // Incline Dumbbell Bench Press
 	'decline pushup': 'C43825EA', // Decline Push Up
-	'military press': '7B8D84E8', // Overhead Press (Barbell) - same as military press
-	'dumbbell shoulder press': '878CD1D0', // Shoulder Press (Dumbbell)
+	// 'military press': '7B8D84E8', // Overhead Press (Barbell) - same as military press
+	// 'dumbbell shoulder press': '878CD1D0', // Shoulder Press (Dumbbell)
 	'dumbbell lateral raise': '422B08F1', // Lateral Raise (Dumbbell) 
 	'cable lateral raise': 'BE289E45', // Lateral Raise (Cable)
 	'machine lateral raise': 'D5D0354D', // Lateral Raise (Machine)
 	'ez-bar curl': '01A35BF9', // EZ Bar Biceps Curl
 	'neutral grip curl': '37FCC2BB', // Default to dumbbell curl
 	'reverse curl': '112FC6B7', // Reverse Curl (Barbell)
-	'rope pushdown': '94B7239B', // Triceps Rope Pushdown
-	'cable pushdown': '93A552C6', // Triceps Pushdown
+	// 'rope pushdown': '94B7239B', // Triceps Rope Pushdown
+	// 'cable pushdown': '93A552C6', // Triceps Pushdown
 	'overhead extension': '2F8D3067', // Triceps Extension (Barbell)
 	'french press': '2F8D3067', // Same as triceps extension
 	'hack squat': 'AC5A4C58', // Hack Squat
-	'stiff leg deadlift': '2A48E443', // Straight Leg Deadlift
-	'good mornings': '4180C405', // Good Morning (Barbell)
+	// 'stiff leg deadlift': '2A48E443', // Straight Leg Deadlift
+	// 'good mornings': '4180C405', // Good Morning (Barbell)
 	'machine hamstring curl': 'B8127AD1', // Lying Leg Curl (Machine)
 	'nordic hamstring curl': '108D7A14', // Nordic Hamstrings Curls
 	'lying leg curl': 'B8127AD1', // Lying Leg Curl (Machine)
-	'leg extensions': '75A4F6C4', // Leg Extension (Machine)
+	// 'leg extensions': '75A4F6C4', // Leg Extension (Machine)
 	'sissy squats': 'F5DEF1EB', // Sissy Squat (Weighted)
-	'bulgarian split squat': 'B5D3A742', // Bulgarian Split Squat
+	// 'bulgarian split squat': 'B5D3A742', // Bulgarian Split Squat
 	'pullover': '67280085', // Pullover (Dumbbell)
-	'reverse fly': 'E5988A0A', // Rear Delt Reverse Fly (Dumbbell)
-	'pec deck': '9DCE2D64', // Butterfly (Pec Deck)  
+	// 'reverse fly': 'E5988A0A', // Rear Delt Reverse Fly (Dumbbell)
+	// 'pec deck': '9DCE2D64', // Butterfly (Pec Deck)  
 	'cable crossover': '651F844C', // Cable Fly Crossovers
-	'tricep dips': '28BB4A95', // Triceps Dip
+	// 'tricep dips': '28BB4A95', // Triceps Dip
 	'walking': '33EDD7DB',
 	'walk': '33EDD7DB',
 	'light walk': '33EDD7DB',
